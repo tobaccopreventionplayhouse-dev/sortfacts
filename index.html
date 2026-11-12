@@ -7,8 +7,8 @@
 @media(max-width:700px){.layout{grid-template-columns:1fr}.box{min-height:190px}}
 </style></head><body><main>
 <span class="tag">Tobacco facts • Sorting game</span><h1>Sort the Facts</h1>
-<p class="intro">Can you separate accurate information from common tobacco myths? Drag each statement into the right category—or tap a statement and then tap a category. Sort all 10 to finish.</p>
-<div class="bar"><span class="score">Correct: <span id="score">0</span> / 10</span><button class="primary" id="reset">Shuffle / Restart</button></div>
+<p class="intro">Can you separate accurate information from common tobacco myths? Drag each statement into the right category—or tap a statement and then tap a category. Each round gives you 10 randomly selected statements from a larger pool. New rounds mix in different statements.</p>
+<div class="bar"><span class="score">Correct: <span id="score">0</span> / <span id="total">10</span></span><button class="primary" id="reset">Shuffle / Restart</button></div>
 <div class="layout">
 <section class="box bank"><h2>Statement cards</h2><div class="hint">Choose a card to sort it.</div><div class="cards" id="cards"></div></section>
 <section class="box"><h2>Accurate fact</h2><div class="hint">Statements supported by public-health evidence.</div><div class="drop" id="fact" data-type="fact" tabindex="0"><p>Drop a fact here—or select this category after choosing a card.</p><div class="cards" id="fact-items"></div></div></section>
@@ -17,25 +17,54 @@
 </div>
 <p class="foot"><b>Sources:</b> <a href="https://www.fda.gov/tobacco-products/health-effects-tobacco-use/nicotine-why-tobacco-products-are-addictive" target="_blank" rel="noopener">FDA: Nicotine and addiction</a> · <a href="https://www.cdc.gov/tobacco/secondhand-smoke/" target="_blank" rel="noopener">CDC: Secondhand smoke</a> · <a href="https://www.cdc.gov/tobacco/about/" target="_blank" rel="noopener">CDC: Cigarette smoking</a></p>
 </main><script>
-const data=[
-{t:"Nicotine is highly addictive.",k:"fact",w:"Nicotine can change how the brain works and cause cravings."},
-{t:"Secondhand smoke has no safe level of exposure.",k:"fact",w:"Even brief exposure can cause harm."},
-{t:"Smoking increases the risk of heart disease and stroke.",k:"fact",w:"Smoking harms blood vessels and the cardiovascular system."},
-{t:"Cigarette smoke contains more than 7,000 chemicals.",k:"fact",w:"Many chemicals in tobacco smoke are toxic; some cause cancer."},
-{t:"Quitting smoking can benefit health.",k:"fact",w:"Quitting lowers the risk of early death and smoking-related disease."},
-{t:"Vape aerosol is only water vapor.",k:"myth",w:"Aerosol can contain nicotine and other harmful substances."},
-{t:"“Light” cigarettes are safe.",k:"myth",w:"No cigarette is safe; the label does not make smoking harmless."},
-{t:"Smokeless tobacco has no health risks.",k:"myth",w:"Smokeless tobacco can cause nicotine addiction and serious disease."},
-{t:"Secondhand smoke only affects people who smoke.",k:"myth",w:"It can harm people nearby, including children and adults who do not smoke."},
-{t:"Nicotine exposure is harmless to the developing brain.",k:"myth",w:"Nicotine can harm brain development during adolescence."}
+const facts=[
+{t:"Nicotine is highly addictive.",w:"Nicotine can change how the brain works and cause cravings."},
+{t:"Secondhand smoke has no safe level of exposure.",w:"Even brief exposure to secondhand smoke can be harmful."},
+{t:"Smoking increases the risk of heart disease and stroke.",w:"Smoking damages blood vessels and the cardiovascular system."},
+{t:"Cigarette smoke contains more than 7,000 chemicals.",w:"Many chemicals in tobacco smoke are toxic; some cause cancer."},
+{t:"Quitting smoking can benefit health at any age.",w:"Quitting lowers the risk of early death and smoking-related disease."},
+{t:"Tobacco use can cause cancer in many parts of the body.",w:"Tobacco use is linked to cancers beyond just lung cancer."},
+{t:"Nicotine can harm the developing adolescent brain.",w:"Brain development continues into young adulthood, and nicotine can interfere with it."},
+{t:"Smoking can damage nearly every organ in the body.",w:"The effects of smoking extend well beyond the lungs."},
+{t:"Children exposed to secondhand smoke can have health problems.",w:"Exposure can increase risks such as respiratory infections and asthma attacks."},
+{t:"E-cigarette aerosol can contain potentially harmful substances.",w:"Aerosol is not simply harmless water vapor."},
+{t:"Smokeless tobacco can cause oral health problems and cancer.",w:"Smokeless tobacco contains harmful chemicals and is not a safe alternative."},
+{t:"A person can become addicted to nicotine from vaping.",w:"Many e-cigarettes contain nicotine, which is highly addictive."},
+{t:"Smoking during pregnancy can harm a developing baby.",w:"Smoking increases risks during pregnancy and for infant health."},
+{t:"Quitting tobacco reduces health risks over time.",w:"Health benefits begin soon after quitting and continue over time."},
+{t:"Cigarette filters do not make smoking safe.",w:"Filters do not eliminate the serious health risks of smoking."},
+{t:"Tobacco use can contribute to type 2 diabetes.",w:"Smoking increases the risk of developing type 2 diabetes."}
 ];
-let items=[],selected=null,score=0;
+const myths=[
+{t:"Vape aerosol is only water vapor.",w:"Aerosol can contain nicotine, metals, and other potentially harmful substances."},
+{t:"“Light” cigarettes are safe.",w:"No cigarette is safe; the label does not make smoking harmless."},
+{t:"Smokeless tobacco has no health risks.",w:"Smokeless tobacco can cause nicotine addiction and serious disease."},
+{t:"Secondhand smoke only affects people who smoke.",w:"It can harm people nearby, including children and adults who do not smoke."},
+{t:"Nicotine exposure is harmless to the developing brain.",w:"Nicotine can harm brain development during adolescence."},
+{t:"Smoking just a few cigarettes a day is risk-free.",w:"Even low levels of smoking increase health risks."},
+{t:"Hookah smoke is harmless because it passes through water.",w:"Water does not remove the harmful chemicals in hookah smoke."},
+{t:"Menthol cigarettes are safer than regular cigarettes.",w:"Menthol does not make cigarettes safer or remove their health risks."},
+{t:"Going outside makes all secondhand smoke exposure impossible.",w:"Smoke can still reach people outdoors, especially near the source."},
+{t:"You cannot become addicted to nicotine from e-cigarettes.",w:"Many e-cigarettes contain addictive nicotine."},
+{t:"Tobacco affects only the lungs.",w:"Smoking can harm the heart, blood vessels, and many other organs."},
+{t:"Herbal cigarettes are harmless because they contain no tobacco.",w:"Burning plant material still produces harmful smoke and chemicals."},
+{t:"Quitting tobacco is pointless after many years of use.",w:"Quitting benefits health at any age, even after years of smoking."},
+{t:"A cigarette with a filter is safe to smoke.",w:"Filters do not remove the serious risks associated with smoking."},
+{t:"Vaping around others cannot expose them to chemicals.",w:"Aerosol can expose bystanders to nicotine and other substances."},
+{t:"All e-cigarettes are nicotine-free.",w:"Many e-cigarettes contain nicotine, sometimes in high concentrations."}
+];
+let items=[],selected=null,score=0,lastRound="";
 const $=id=>document.getElementById(id);
-function shuffle(a){return [...a].sort(()=>Math.random()-.5)}
+function shuffle(a){const copy=[...a];for(let i=copy.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[copy[i],copy[j]]=[copy[j],copy[i]]}return copy}
 function updateScore(){$("score").textContent=score}
 function makeCard(item){const el=document.createElement("div");el.className="statement";el.textContent=item.t;el.draggable=true;el.tabIndex=0;el.setAttribute("role","button");el.setAttribute("aria-label","Choose statement: "+item.t);el.addEventListener("dragstart",e=>{selected=item; e.dataTransfer.setData("text/plain",item.t)});el.addEventListener("click",()=>{if(el.classList.contains("done"))return;document.querySelectorAll(".statement").forEach(x=>x.classList.remove("selected"));selected=item;el.classList.add("selected");$("feedback").textContent="Now choose Accurate fact or Myth / inaccurate claim."});el.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();el.click()}});return el}
-function render(){items=shuffle(data);selected=null;score=0;updateScore();$("cards").innerHTML="";$("fact-items").innerHTML="";$("myth-items").innerHTML="";items.forEach(x=>$("cards").appendChild(makeCard(x)));$("feedback").className="feedback";$("feedback").textContent="Select a statement, then choose a category."}
-function sort(type){if(!selected){$("feedback").textContent="Choose a statement card first.";return}const item=selected;if(item.k===type){score+=10;updateScore();const dest=$(type+"-items");const el=makeCard(item);el.draggable=false;el.classList.add("done");el.onclick=null;dest.appendChild(el);[...$("cards").children].forEach(c=>{if(c.textContent===item.t)c.remove()});$("feedback").className="feedback";$("feedback").textContent="Correct! "+item.w;selected=null;if(score===100){$("feedback").textContent+=" You sorted every statement—excellent work!"}}else{$("feedback").className="feedback";$("feedback").textContent="Not quite. Try the other category. Hint: "+item.w;selected=null;document.querySelectorAll("#cards .statement").forEach(c=>c.classList.remove("selected"))}}
+function render(){
+ let round;
+ do { round=[...shuffle(facts).slice(0,5).map(x=>({...x,k:"fact"})),...shuffle(myths).slice(0,5).map(x=>({...x,k:"myth"}))]; round=shuffle(round); }
+ while(round.map(x=>x.t).sort().join("|")===lastRound);
+ lastRound=round.map(x=>x.t).sort().join("|");
+ items=round;selected=null;score=0;$("total").textContent=items.length;updateScore();$("cards").innerHTML="";$("fact-items").innerHTML="";$("myth-items").innerHTML="";items.forEach(x=>$("cards").appendChild(makeCard(x)));$("feedback").className="feedback";$("feedback").textContent="Select a statement, then choose a category."}
+function sort(type){if(!selected){$("feedback").textContent="Choose a statement card first.";return}const item=selected;if(item.k===type){score+=10;updateScore();const dest=$(type+"-items");const el=makeCard(item);el.draggable=false;el.classList.add("done");el.onclick=null;dest.appendChild(el);[...$("cards").children].forEach(c=>{if(c.textContent===item.t)c.remove()});$("feedback").className="feedback";$("feedback").textContent="Correct! "+item.w;selected=null;if(score===items.length*10){$("feedback").textContent+=" You sorted every statement—excellent work!"}}else{$("feedback").className="feedback";$("feedback").textContent="Not quite. Try the other category. Hint: "+item.w;selected=null;document.querySelectorAll("#cards .statement").forEach(c=>c.classList.remove("selected"))}}
 ["fact","myth"].forEach(type=>{const zone=$(type);zone.addEventListener("dragover",e=>{e.preventDefault();zone.classList.add("over")});zone.addEventListener("dragleave",()=>zone.classList.remove("over"));zone.addEventListener("drop",e=>{e.preventDefault();zone.classList.remove("over");sort(type)});zone.addEventListener("click",e=>{if(e.target===zone||e.target.tagName==="P")sort(type)});zone.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();sort(type)}})});
 $("reset").addEventListener("click",render);render();
 </script></body></html>
